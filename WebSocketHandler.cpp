@@ -57,11 +57,10 @@ void WebSocketHandler::on_connect(boost::system::error_code ec, tcp::endpoint en
     }
     std::cout << "WebSocket connected successfully for symbol: " << symbol << std::endl;
 
-    // 更新连接字符串
+
     std::string host = endpoint.address().to_string();
     host += ':' + std::to_string(endpoint.port());
 
-    // ... 其他连接后的逻辑 ...
 }
 
 void WebSocketHandler::on_ssl_handshake(beast::error_code ec) {
@@ -91,8 +90,7 @@ void WebSocketHandler::on_read(boost::system::error_code ec, std::size_t bytes_t
         return;
     }
     std::cout << "Received " << bytes_transferred << " bytes from WebSocket for symbol: " << symbol << std::endl;
-    
-    // ... 处理接收到的数据 ...
+
 }
 
 void WebSocketHandler::fail(beast::error_code ec, char const* what) {
