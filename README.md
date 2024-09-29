@@ -23,21 +23,6 @@ WebSocket Threads: Dedicated threads that handle WebSocket connections for diffe
 REST Polling Threads: Threads that periodically poll the REST API without blocking.
 Message Processing Thread: A thread pool that processes incoming messages, performs deduplication, and triggers the appropriate callbacks (OnOrderbookWs, OnOrderbookRest).
 
-### code for diagram timeline
-
-  title CPU Context Switching in Binance Client
-  section WebSocket Connectivity
-    0s : Thread 1: WebSocket Connect : Thread 1: Receive Data : Thread 1: Add to Queue : Thread 1: Callback OnOrderbookWs
-    2s : Thread 1: WebSocket Wait : Thread 1: Handle New WebSocket Data
-  section REST Connectivity
-    0s : Thread 2: REST Request : Thread 2: Handle Response : Thread 2: Add to Queue : Thread 2: Callback OnOrderbookRest
-    3s : Thread 2: REST Polling : Thread 2: Handle New REST Data
-  section Queue and Message Processing
-    1s - 2s : Thread Pool: Deduplicate Messages : Thread Pool: Process WebSocket Data
-    2s - 3s : Thread Pool: Process REST Data
-  section Concurrent Execution
-    0s - 5s : Thread 1: WebSocket Monitoring : Thread 2: REST Polling : Thread Pool: Message Processing
-
 Explanation:
 
 Main Thread: Starts the application, initializes resources, and spawns other threads. It doesn't perform blocking operations, ensuring the main loop remains free.
