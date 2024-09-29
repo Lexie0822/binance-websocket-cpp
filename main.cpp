@@ -10,12 +10,12 @@ int main() {
     boost::asio::ssl::context ctx(boost::asio::ssl::context::tlsv12_client);
 
     std::cout << "Initializing BinanceClient..." << std::endl;
-    BinanceClient client(ioc, ctx);  // 使用默认的线程数
+    BinanceClient client(ioc, ctx);  
 
-    // 获取 MessageProcessor 的引用
+
     MessageProcessor& messageProcessor = client.getMessageProcessor();
 
-    // 添加测试消息
+
     messageProcessor.addMessage(true, "Test WebSocket message");
     messageProcessor.addMessage(false, "Test REST API message");
 
