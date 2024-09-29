@@ -19,7 +19,7 @@ public:
     void stop();
     void connect(const std::string& host, const std::string& port, const std::string& target);
     
-    // 修改这个方法
+
     MessageProcessor& getMessageProcessor() { return *messageProcessor_; }
     OrderbookManager& getOrderbookManager() { return *orderbookManager_; }
 
