@@ -1,4 +1,4 @@
-# Binance Client
+![diagram](https://github.com/user-attachments/assets/59a04622-b443-4a9b-86aa-a936583f61b1)# Binance Client
 
 ## Project Structure
 
@@ -14,7 +14,23 @@
 
 ### 1. CPU Context Switching Diagram
 
-[Insert your CPU context switching diagram here]
+### code for diagram timeline
+
+  title CPU Context Switching in Binance Client
+  section WebSocket Connectivity
+    0s : Thread 1: WebSocket Connect : Thread 1: Receive Data : Thread 1: Add to Queue : Thread 1: Callback OnOrderbookWs
+    2s : Thread 1: WebSocket Wait : Thread 1: Handle New WebSocket Data
+  section REST Connectivity
+    0s : Thread 2: REST Request : Thread 2: Handle Response : Thread 2: Add to Queue : Thread 2: Callback OnOrderbookRest
+    3s : Thread 2: REST Polling : Thread 2: Handle New REST Data
+  section Queue and Message Processing
+    1s - 2s : Thread Pool: Deduplicate Messages : Thread Pool: Process WebSocket Data
+    2s - 3s : Thread Pool: Process REST Data
+  section Concurrent Execution
+    0s - 5s : Thread 1: WebSocket Monitoring : Thread 2: REST Polling : Thread Pool: Message Processing
+
+[![diagram](https://github.com/user-attachments/assets/cd630638-87c9-447e-b9f5-4d22df23c0fc)
+]
 
 Explanation:
 - The x-axis represents different tasks (WebSocket handling, REST API handling, message processing, etc.)
