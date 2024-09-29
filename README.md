@@ -14,34 +14,83 @@
 
 ### 1. CPU Context Switching Diagram
 
-I utilize a multithreaded architecture to handle both WebSocket connections and REST API polling asynchronously. This design ensures that neither the WebSocket nor REST connectivity blocks the main loop, allowing for efficient and concurrent data processing.
+### Detailed Explanation of the Diagram: CPU Context Switching for Binance Client
 
-Threading Mechanism:
+This timeline diagram demonstrates how **CPU context switching** happens between tasks in the **Binance Client** system for **WebSocket** and **REST API** operations, as managed by threading mechanism and task schedulers. Below is a breakdown of each section.
 
-Main Thread: Initializes the application and manages the overall workflow.
-WebSocket Threads: Dedicated threads that handle WebSocket connections for different symbols.
-REST Polling Threads: Threads that periodically poll the REST API without blocking.
-Message Processing Thread: A thread pool that processes incoming messages, performs deduplication, and triggers the appropriate callbacks (OnOrderbookWs, OnOrderbookRest).
+---
 
-Explanation:
+#### **1. WebSocket Connectivity (Thread 1)**
 
-Main Thread: Starts the application, initializes resources, and spawns other threads. It doesn't perform blocking operations, ensuring the main loop remains free.
+- **0s: WebSocket Connect**: 
+   - The `WebSocketHandler` establishes a connection to the Binance WebSocket API to start receiving live market data.
+   - This task is assigned to **Thread 1**.
+  
+- **0s - 1s: Receive Data and Add to Queue**: 
+   - After connecting, the WebSocket receives data, such as orderbook updates or trade information. The `WebSocketHandler` processes this data and adds it to a queue for further processing by the `MessageProcessor`.
+   - This is done asynchronously to avoid blocking the main loop.
 
-WebSocket Threads: Each symbol (e.g., BTCUSDT, ETHUSDT) has a dedicated thread handling its WebSocket connection. These threads use asynchronous I/O to read data without blocking.
+- **1s - 2s: Callback `OnOrderbookWs`**: 
+   - Once the WebSocket data is queued, a callback function (`OnOrderbookWs`) is triggered, which calls the `MessageProcessor` to handle the incoming data.
+  
+- **2s: WebSocket Wait and Handle New Data**:
+   - After the initial data is handled, Thread 1 goes into a waiting state, monitoring for more incoming data from the WebSocket.
+   - New data received from the WebSocket will be handled similarly, repeating this cycle.
 
-REST Threads: Similar to WebSocket threads, each symbol has a thread that periodically polls the REST API. The polling interval is managed to prevent resource exhaustion.
+---
 
-Message Processing Thread Pool: A pool of worker threads that process messages from a thread-safe queue. They perform deduplication and invoke the appropriate callbacks.
+#### **2. REST Connectivity (Thread 2)**
 
-Co-existence Without Blocking:
+- **0s: REST Request**:
+   - Simultaneously, **Thread 2** initiates a REST API request to periodically poll Binance for market data (e.g., orderbook snapshots).
+   - This is managed by the `RestApiHandler`.
 
-Asynchronous Operations: Both WebSocket and REST threads use asynchronous I/O provided by Boost.Asio. This allows threads to initiate I/O operations and continue without waiting for them to complete.
+- **1s - 2s: Handle Response and Add to Queue**: 
+   - Once the response from the REST API is received, it is parsed by the `RestApiHandler` and added to a queue, similar to the WebSocket process.
 
-Thread-safe Queues: Incoming messages are placed into thread-safe queues, preventing contention and ensuring safe communication between threads.
+- **2s - 3s: Callback `OnOrderbookRest`**: 
+   - A callback (`OnOrderbookRest`) is triggered, sending the REST data to the `MessageProcessor` for deduplication and further processing.
 
-Non-blocking Main Loop: The main thread doesn't perform any blocking operations. It oversees the initialization and can handle other tasks like monitoring or scaling.
+- **3s: REST Polling and Handle New Data**:
+   - The system continues to poll the REST API periodically, retrieving new data and repeating the process.
 
-Efficient Threading: By dedicating threads to specific tasks and using asynchronous operations, we minimize context switching and CPU overhead.
+---
+
+#### **3. Queue and Message Processing (Thread Pool)**
+
+- **1s - 2s: Deduplicate Messages**:
+   - Once WebSocket or REST data is added to the queue, the `MessageProcessor` is responsible for deduplicating the messages to ensure that only unique updates are processed. This happens in the background using the **thread pool**.
+   
+- **2s - 3s: Process WebSocket and REST Data**:
+   - After deduplication, the `MessageProcessor` processes the messages (e.g., updating the orderbook) and forwards them to the `OrderbookManager`.
+
+---
+
+#### **4. Concurrent Execution**
+
+- **0s - 5s: WebSocket Monitoring, REST Polling, and Thread Pool**:
+   - Throughout the execution, WebSocket monitoring, REST polling, and message processing occur concurrently.
+   - The **thread pool** efficiently handles tasks by dynamically distributing them across available threads, ensuring both WebSocket and REST tasks can coexist without blocking each other.
+   - This enables the system to handle multiple tasks simultaneously, optimizing CPU usage.
+
+---
+
+### Key Takeaways:
+
+1. **Asynchronous Operation**: 
+   - The WebSocket (`WebSocketHandler`) and REST API (`RestApiHandler`) run asynchronously using separate threads, ensuring that neither blocks the other.
+
+2. **Thread Pool Efficiency**: 
+   - The thread pool is used for tasks such as message deduplication and processing, dynamically assigning available threads to avoid CPU bottlenecks and allow smooth handling of multiple data sources.
+
+3. **Task Scheduling**:
+   - Tasks such as WebSocket message reception, REST API polling, and queue processing are scheduled efficiently to maximize CPU utilization without causing delays.
+
+4. **Callbacks (`OnOrderbookWs` and `OnOrderbookRest`)**:
+   - Callbacks ensure that data from both WebSocket and REST connections are processed in a timely manner, feeding the processed data into the `OrderbookManager`.
+
+---
+
 
 ### 2. Potential System Bottlenecks and Monitoring Metrics
 
@@ -88,7 +137,6 @@ Efficient Threading: By dedicating threads to specific tasks and using asynchron
 
 
 
-**Assignment 1b**
 
 ---
 
