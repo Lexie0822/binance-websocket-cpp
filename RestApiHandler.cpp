@@ -120,7 +120,7 @@ void RestApiHandler::on_shutdown(beast::error_code ec) {
     if(ec)
         return fail(ec, "shutdown");
 
-    // If we get here then the connection is closed gracefully
+    // If get here then the connection is closed gracefully
 }
 
 void RestApiHandler::fail(beast::error_code ec, char const* what) {
