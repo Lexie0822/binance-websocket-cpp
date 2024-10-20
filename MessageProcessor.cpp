@@ -1,62 +1,71 @@
 #include "MessageProcessor.h"
 #include "OrderbookManager.h"
 #include <iostream>
+#include <thread>
 #include <chrono>
+#include <simdjson.h>
+#include <spdlog/spdlog.h>
 
-MessageProcessor::MessageProcessor(boost::asio::io_context& ioc, OrderbookManager& orderbookManager) 
-    : ioc(ioc), orderbookManager(orderbookManager) {
-    std::cout << "MessageProcessor initialized" << std::endl;
-}
-
-void MessageProcessor::addMessage(bool isWebSocket, const std::string& message) {
-    std::lock_guard<std::mutex> lock(queueMutex);
-    messageQueue.push({isWebSocket, message});
-    std::cout << "Message added to queue. Queue size: " << messageQueue.size() << std::endl;
+MessageProcessor::MessageProcessor(boost::asio::io_context& ioc, OrderbookManager& orderbook_manager)
+    : ioc_(ioc), orderbook_manager_(orderbook_manager), running_(false), deduplicator_(100000, 1000)
+{
+    prometheus_registry = std::make_shared<prometheus::Registry>();
+    
+    messages_processed = &prometheus::BuildCounter()
+        .Name("messages_processed_total")
+        .Help("Total number of messages processed")
+        .Register(*prometheus_registry);
+    
+    queue_size = &prometheus::BuildGauge()
+        .Name("message_queue_size")
+        .Help("Current size of the message queue")
+        .Register(*prometheus_registry);
 }
 
 void MessageProcessor::run() {
-    std::cout << "MessageProcessor::run() started" << std::endl;
-    while (running) {
-        std::pair<bool, std::string> message;
-        {
-            std::lock_guard<std::mutex> lock(queueMutex);
-            if (!messageQueue.empty()) {
-                message = messageQueue.front();
-                messageQueue.pop();
-                std::cout << "Message popped from queue. Remaining messages: " << messageQueue.size() << std::endl;
-            }
-        }
-        if (!message.second.empty()) {
-            if (processedMessages.find(message.second) == processedMessages.end()) {
-                processedMessages.insert(message.second);
-                processMessage(message.first, message.second);
-            } else {
-                std::cout << "Duplicate message skipped" << std::endl;
-            }
-        } else {
-            std::this_thread::sleep_for(std::chrono::milliseconds(100));
-        }
-    }
-    std::cout << "MessageProcessor::run() stopped" << std::endl;
-}
-
-void MessageProcessor::processMessage(bool isWebSocket, const std::string& message) {
-    std::cout << "Processing " << (isWebSocket ? "WebSocket" : "REST API") << " message: " << message.substr(0, 50) << "..." << std::endl;
-    
-    auto start = std::chrono::high_resolution_clock::now();
-    
-    if (isWebSocket) {
-        orderbookManager.OnOrderbookWs("", message);
-    } else {
-        orderbookManager.OnOrderbookRest("", message);
-    }
-    
-    auto end = std::chrono::high_resolution_clock::now();
-    std::chrono::duration<double, std::milli> elapsed = end - start;
-    
-    std::cout << "Message processed in " << elapsed.count() << " ms" << std::endl;
+    running_ = true;
+    schedule_processing();
 }
 
 void MessageProcessor::stop() {
-    running = false;
+    running_ = false;
+}
+
+void MessageProcessor::add_message(bool is_websocket, std::string&& message) {
+    if (message_queue_.size() > MAX_QUEUE_SIZE) {
+        spdlog::warn("Message queue full, dropping message");
+        return; // Back-pressure: drop messages if queue is full
+    }
+    message_queue_.push({is_websocket, std::move(message)});
+    queue_size->Add({}).Set(message_queue_.size());
+}
+
+void MessageProcessor::process_messages() {
+    Message msg;
+    while (message_queue_.pop(msg)) {
+        if (!deduplicator_.is_duplicate(msg.content)) {
+            simdjson::dom::parser parser;
+            simdjson::dom::element doc = parser.parse(msg.content);
+            
+            try {
+                if (msg.is_websocket) {
+                    orderbook_manager_.OnOrderbookWs("", doc);
+                } else {
+                    orderbook_manager_.OnOrderbookRest("", doc);
+                }
+                messages_processed->Add({}).Increment();
+            } catch (const std::exception& e) {
+                spdlog::error("Error processing message: {}", e.what());
+            }
+        }
+    }
+    queue_size->Add({}).Set(message_queue_.size());
+
+    if (running_) {
+        schedule_processing();
+    }
+}
+
+void MessageProcessor::schedule_processing() {
+    ioc_.post([this]() { process_messages(); });
 }
