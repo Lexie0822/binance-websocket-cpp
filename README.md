@@ -1,27 +1,84 @@
 ![diagram](https://github.com/user-attachments/assets/59a04622-b443-4a9b-86aa-a936583f61b1)# Binance Client
 ![diagram](TR.png)
 
+# Binance WebSocket C++ Client
+
+This project provides a C++ client for interacting with Binance's WebSocket and REST APIs, designed to facilitate high-frequency trading applications.
+
+## Features
+- **WebSocket and REST Integration**: Supports concurrent WebSocket data streaming and REST API polling for Binance.
+- **Order Book Management**: Manages and processes order book data for various trading pairs.
+- **Custom Thread Pool**: Efficient handling of concurrent tasks with a custom thread pool implementation.
+- **Message Deduplication**: Filters duplicate messages using bloom filters for consistent data.
+- **Memory Management**: Uses a custom memory pool for improved performance and resource efficiency.
 
 ## Project Structure
 
-- `main.cpp`: Program entry point
-- `BinanceClient.cpp` / `BinanceClient.h`: Main client class, manages WebSocket and REST API connections
-- `WebSocketHandler.cpp` / `WebSocketHandler.h`: Handles WebSocket connections
-- `RestApiHandler.cpp` / `RestApiHandler.h`: Handles REST API connections
-- `MessageProcessor.cpp` / `MessageProcessor.h`: Processes messages from WebSocket and REST API
-- `OrderbookManager.cpp` / `OrderbookManager.h`: Manages orderbook data
-- `ThreadPool.cpp` / `ThreadPool.h`: Thread pool implementation
-- `EventLoop.cpp` / `EventLoop.h`: Manages event-driven programming
-- `MemoryPool.cpp` / `MemoryPool.h`: Implements custom memory allocation
-- `tests/`: Unit tests directory
-  - `BinanceClientTests.cpp`
-  - `WebSocketHandlerTests.cpp`
-  - `RestApiHandlerTests.cpp`
-  - `MessageProcessorTests.cpp`
-  - `OrderbookManagerTests.cpp`
-  - `ThreadPoolTests.cpp`
-  - `EventLoopTests.cpp`
-  - `MemoryPoolTests.cpp`
+1. **Core Modules**:
+    - **`BinanceClient.cpp` / `BinanceClient.h`**:
+      - The main client class that integrates both WebSocket and REST API capabilities. It manages connection setups, data reception, and interaction with other core components.
+    - **`WebSocketHandler.cpp` / `WebSocketHandler.h`**:
+      - Manages the connection to Binance's WebSocket endpoint.
+      - Handles WebSocket-related events such as connecting, disconnecting, and message processing.
+      - Implements reconnection strategies to ensure a persistent data stream.
+    - **`RestApiHandler.cpp` / `RestApiHandler.h`**:
+      - Manages Binance's REST API requests.
+      - Provides functionalities for polling data and executing trades or other commands.
+    - **`MessageProcessor.cpp` / `MessageProcessor.h`**:
+      - Handles the processing of incoming messages from both WebSocket and REST sources.
+      - Uses custom message deduplication logic, likely through `BloomFilter.h`.
+    - **`OrderbookManager.cpp` / `OrderbookManager.h`**:
+      - Maintains the state of the order book for different trading pairs.
+      - Updates order book data based on WebSocket and REST inputs.
+
+2. **Utility Components**:
+    - **`ThreadPool.cpp` / `ThreadPool.h`**:
+      - Provides thread pool functionality for managing multiple concurrent tasks, ensuring efficient use of resources.
+    - **`EventLoop.cpp` / `EventLoop.h`**:
+      - Implements an event loop for non-blocking operations, crucial for real-time data handling.
+    - **`MemoryPool.h`**:
+      - Custom memory management implementation to optimize performance for frequent allocations and deallocations.
+    - **`SIMDUtils.h`**:
+      - Contains SIMD (Single Instruction, Multiple Data) utility functions for optimizing operations such as data processing and transformations.
+    - **`BloomFilter.h`**:
+      - Implements a bloom filter, used for fast and memory-efficient duplicate message detection.
+
+3. **Concurrency and Performance Tools**:
+    - **`LockFreeQueue.h` / `LockFreePriorityQueue.h`**:
+      - Implements lock-free data structures to reduce synchronization bottlenecks.
+    - **`Deduplicator.cpp` / `Deduplicator.h`**:
+      - Provides additional mechanisms for deduplication, complementing `BloomFilter.h`.
+
+4. **Build Configuration**:
+    - **`CMakeLists.txt`**:
+      - Configures the project build, defining compilation flags, linking libraries, and organizing project components.
+    - **`cmake/FindWebsocketpp.cmake`**:
+      - CMake script for finding the WebSocket++ dependency, required for WebSocket handling.
+
+5. **Testing**:
+    - **Unit Tests**:
+      - **`tests/BinanceClientTest.cpp`**:
+        - Tests for the main client interactions.
+      - **`tests/WebSocketHandlerTest.cpp`**:
+        - Tests WebSocket connection, message handling, and reconnection logic using GoogleTest.
+      - **`tests/RestApiHandlerTest.cpp`**:
+        - Verifies REST API request handling and polling intervals.
+      - **Other Tests**:
+        - Unit tests for other components such as `MessageProcessor`, `OrderbookManager`, and utility classes like `ThreadPool` and `EventLoop`.
+      - **Testing Framework**: Uses GoogleTest (`gtest`) for writing unit tests, and `gmock` for mocking components where needed.
+
+6. **Miscellaneous**:
+    - **`.gitignore`**:
+      - Defines files and directories to be ignored by Git version control.
+    - **`.vscode/c_cpp_properties.json` / `.vscode/settings.json`**:
+      - Configuration files for Visual Studio Code, providing settings for C++ IntelliSense, debugging, and compilation.
+
+## Dependencies
+- **Boost.Asio**: Used for asynchronous networking.
+- **WebSocket++**: Manages WebSocket communication with Binance servers.
+- **C++17 or newer**: Project requires C++17 due to usage of modern language features like smart pointers, lambdas, etc.
+- **GoogleTest**: Used for unit testing to ensure the reliability of individual components.
+
 
 ## Assignment 1b Answers
 
