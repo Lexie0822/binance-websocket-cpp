@@ -1,4 +1,6 @@
 ![diagram](https://github.com/user-attachments/assets/59a04622-b443-4a9b-86aa-a936583f61b1)# Binance Client
+![diagram](TR.png)
+
 
 ## Project Structure
 
