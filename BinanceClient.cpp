@@ -137,12 +137,12 @@ void BinanceClient::remove_symbol(const std::string& symbol) {
     symbol_manager_.remove_symbol(symbol);
     std::unique_lock<std::shared_mutex> lock(symbols_mutex_);
     
-    // 使用 std::remove 和 lambda 函数来移除元素
+    // Use std::remove and lambda functions to remove elements
     auto new_end = std::remove_if(active_symbols_.begin(), active_symbols_.end(),
         [&symbol](const std::string& s) { return s == symbol; });
     
-    // 注意：这里不能直接调用 erase，因为 tbb::concurrent_vector 没有 erase 方法
-    // 我们可以通过将要删除的元素设置为空字符串来模拟删除操作
+    // erase cannot be called directly here because tbb::concurrent_vector does not have an erase method.
+    // simulate a delete operation by setting the element to be deleted to an empty string
     for (auto it = new_end; it != active_symbols_.end(); ++it) {
         *it = "";
     }
