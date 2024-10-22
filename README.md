@@ -1,6 +1,3 @@
-![diagram](https://github.com/user-attachments/assets/59a04622-b443-4a9b-86aa-a936583f61b1)# Binance Client
-![diagram](TR.png)
-
 # Binance WebSocket C++ Client
 
 This project provides a C++ client for interacting with Binance's WebSocket and REST APIs, designed to facilitate high-frequency trading applications.
@@ -84,6 +81,8 @@ This project provides a C++ client for interacting with Binance's WebSocket and 
 
 ### 1. CPU Context Switching Diagram
 
+![diagram](TR.png)
+
 I utilize a multithreaded architecture to handle both WebSocket connections and REST API polling asynchronously. This design ensures that neither the WebSocket nor REST connectivity blocks the main loop, allowing for efficient and concurrent data processing.
 
 Threading Mechanism:
@@ -111,125 +110,8 @@ Thread-safe Queues: Incoming messages are placed into thread-safe queues, preven
 
 Non-blocking Main Loop: The main thread doesn't perform any blocking operations. It oversees the initialization and can handle other tasks like monitoring or scaling.
 
-Efficient Threading: By dedicating threads to specific tasks and using asynchronous operations, we minimize context switching and CPU overhead.
+Efficient Threading: By dedicating threads to specific tasks and using asynchronous operations, I minimize context switching and CPU overhead.
 
-### 2. Potential System Bottlenecks and Monitoring Metrics
-
-1. Network latency: Connections to Binance servers may be affected by network conditions.
-   Monitor: Round-trip time (RTT), connection failure rate
-
-2. Message queue backlog: If message processing can't keep up with incoming messages, queue backlog may occur.
-   Monitor: Queue length, message processing time
-
-3. CPU utilization: High load may cause processing delays.
-   Monitor: CPU usage per core
-
-4. Memory usage: Large amounts of data may cause memory pressure.
-   Monitor: Memory usage, memory allocation/deallocation frequency
-
-5. Thread pool saturation: If task count exceeds thread pool capacity, it may cause processing delays.
-   Monitor: Thread pool utilization, waiting queue length
-
-6. Orderbook update frequency: High-frequency updates may cause processing pressure.
-   Monitor: Orderbook updates per second
-
-
-### 3. Methods to Improve System Latency
-
-1. Use more efficient data structures: For example, use optimized tree structures or hash tables for the orderbook.
-
-2. Implement batch processing: Combine multiple small updates into one large update to reduce processing frequency.
-
-3. Use memory-mapped files: For large amounts of data, this can reduce memory copies.
-
-4. Optimize network configuration: Adjust TCP parameters, use faster DNS resolution, etc.
-
-5. Use faster JSON parsing libraries: Such as rapidjson or simdjson.
-
-6. Implement predictive caching: Pre-load data that may be needed soon.
-
-7. Use FPGA or GPU acceleration: For specific compute-intensive tasks.
-
-8. Optimize thread pool: Dynamically adjust thread count based on actual load.
-
-9. Use lock-free data structures: Reduce thread synchronization overhead where possible.
-
-10. Implement finer-grained task division: Allow for more flexible parallel processing.
-
-
-
-**Assignment 1b**
-
----
-
-### 1. CPU Context Switching Diagram
-
-**Overview**
-
-In our solution, we utilize a multithreaded architecture to handle both WebSocket connections and REST API polling asynchronously. This design ensures that neither the WebSocket nor REST connectivity blocks the main loop, allowing for efficient and concurrent data processing.
-
-**Threading Mechanism:**
-
-- **Main Thread**: Initializes the application and manages the overall workflow.
-- **WebSocket Threads**: Dedicated threads that handle WebSocket connections for different symbols.
-- **REST Polling Threads**: Threads that periodically poll the REST API without blocking.
-- **Message Processing Thread**: A thread pool that processes incoming messages, performs deduplication, and triggers the appropriate callbacks (`OnOrderbookWs`, `OnOrderbookRest`).
-
-**Diagram Explanation**
-
-Below is a simplified diagram illustrating how CPU context switching occurs among different tasks over time. The x-axis represents time, and the y-axis lists the various threads/tasks.
-
-```
-Time ↑
-      |
-      |                   ┌─────────────────────────────────────────┐
-      |                   │          Main Thread                    │
-      |                   └─────────────────────────────────────────┘
-      |
-      |   ┌───────────────┐
-      |   │ WebSocket Thread (BTCUSDT) │───────────────────────────────▶
-      |   └───────────────┘
-      |
-      |   ┌───────────────┐
-      |   │ WebSocket Thread (ETHUSDT) │──────────────────────────────▶
-      |   └───────────────┘
-      |
-      |   ┌───────────────┐
-      |   │ REST Thread (BTCUSDT) │────────────────────────────────────▶
-      |   └───────────────┘
-      |
-      |   ┌───────────────┐
-      |   │ REST Thread (ETHUSDT) │────────────────────────────────────▶
-      |   └───────────────┘
-      |
-      |   ┌───────────────┐
-      |   │ Message Processing Thread Pool │───────────────────────────▶
-      |   └───────────────┘
-      |
-      +──────────────────────────────────────────────────────────────────▶ Tasks
-```
-
-**Explanation:**
-
-- **Main Thread**: Starts the application, initializes resources, and spawns other threads. It doesn't perform blocking operations, ensuring the main loop remains free.
-  
-- **WebSocket Threads**: Each symbol (e.g., BTCUSDT, ETHUSDT) has a dedicated thread handling its WebSocket connection. These threads use asynchronous I/O to read data without blocking.
-
-- **REST Threads**: Similar to WebSocket threads, each symbol has a thread that periodically polls the REST API. The polling interval is managed to prevent resource exhaustion.
-
-- **Message Processing Thread Pool**: A pool of worker threads that process messages from a thread-safe queue. They perform deduplication and invoke the appropriate callbacks.
-
-**Co-existence Without Blocking:**
-
-- **Asynchronous Operations**: Both WebSocket and REST threads use asynchronous I/O provided by Boost.Asio. This allows threads to initiate I/O operations and continue without waiting for them to complete.
-
-- **Thread-safe Queues**: Incoming messages are placed into thread-safe queues, preventing contention and ensuring safe communication between threads.
-
-- **Non-blocking Main Loop**: The main thread doesn't perform any blocking operations. It oversees the initialization and can handle other tasks like monitoring or scaling.
-
-- **Efficient Threading**: By dedicating threads to specific tasks and using asynchronous operations, we minimize context switching and CPU overhead.
-
----
 
 ### 2. Potential Bottlenecks and Monitoring
 
