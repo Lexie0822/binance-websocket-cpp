@@ -86,15 +86,15 @@ This project provides a C++ client for interacting with Binance's WebSocket and 
      - `BinanceClient.cpp`, `EventLoop.cpp`, `RestApiHandler.cpp`, `WebSocketHandler.cpp`
    - **Current Implementation**:
      - leveraging Boost.Asio (`io_context`) for handling asynchronous tasks, which is a suitable choice for non-blocking operations. Additionally, there are custom event loop implementations to manage the flow of events effectively.
-   - **Feedback**:
-     - To further improve, you might consider using `boost::asio::strand` to better coordinate multiple event loops, reducing the risk of race conditions and ensuring smooth concurrency.
+   - **Improvements**:
+     - To further improve, consider using `boost::asio::strand` to better coordinate multiple event loops, reducing the risk of race conditions and ensuring smooth concurrency.
 
 #### 2. **Multithreading**
    - **Files Involved**:
      - `BinanceClient.h`, `ThreadPool.cpp`, `EventLoop.cpp`
    - **Current Implementation**:
      - A custom `ThreadPool` is used to manage tasks concurrently, and multithreading has been effectively implemented using C++ standard threading (`std::thread`) and Boost threading utilities.
-   - **Feedback**:
+   - **Improvements**:
      - Improvements could include balancing workloads dynamically across threads, utilizing thread affinity to allocate specific tasks to dedicated cores, and employing a more dynamic thread pool that scales based on the current workload.
 
 #### 3. **Deduplication**
@@ -102,7 +102,7 @@ This project provides a C++ client for interacting with Binance's WebSocket and 
      - `BloomFilter.h`, `Deduplicator.cpp`, `MessageProcessor.h`
    - **Current Implementation**:
      - Deduplication is achieved using a combination of bloom filters and a deduplication mechanism that appears to effectively filter out duplicate messages. This is critical in ensuring each callback is unique.
-   - **Feedback**:
+   - **Improvements**:
      - Consider combining bloom filters with additional hashing mechanisms to further reduce false positives, ensuring more precise and reliable message filtering.
 
 #### 4. **Scaling Horizontally**
@@ -110,7 +110,7 @@ This project provides a C++ client for interacting with Binance's WebSocket and 
      - `EventLoop.cpp`, `LockFreeQueue.h`, `ThreadPool.h`
    - **Current Implementation**:
      - Including several lock-free data structures (`LockFreeQueue` and `LockFreePriorityQueue`) that help in scaling the solution horizontally by minimizing locking bottlenecks. The use of thread pools further helps to manage multiple symbols concurrently.
-   - **Feedback**:
+   - **FImprovements**:
      - Improvements can include splitting symbols across specific CPU cores using CPU affinity to avoid overloading a single core. Implementing a load balancing strategy to distribute symbols across available CPU resources would also enhance horizontal scalability.
 
 #### 5. **Low Latency**
@@ -118,7 +118,7 @@ This project provides a C++ client for interacting with Binance's WebSocket and 
      - `SIMDUtils.h`, `LockFreeQueue.h`, `MemoryPool.h`
    - **Current Implementation**:
      - Lock-free queues and custom memory pooling are used to minimize latency, and `SIMDUtils.h` is utilized to perform SIMD optimizations. These techniques help to reduce the overhead involved in data processing and thread synchronization.
-   - **Feedback**:
+   - **Improvements**:
      - To further improve, consider reducing redundant logging and minimizing the number of context switches by binding critical tasks to specific CPU cores. Using a hybrid approach that combines lock-free data structures with fine-grained locks in critical sections could also reduce contention.
 
 #### 6. **Reliability**
@@ -126,7 +126,7 @@ This project provides a C++ client for interacting with Binance's WebSocket and 
      - `WebSocketHandler.cpp`
    - **Current Implementation**:
      - The WebSocket handler incorporates a reconnection mechanism (`fail_handler`) and error handling routines to ensure the stability of the WebSocket connections.
-   - **Feedback**:
+   - **Improvements**:
      - Consider implementing a more adaptive reconnection strategy that adjusts reconnection times based on previous failures. Adding redundant WebSocket connections that can take over when a primary connection fails would further enhance system reliability.
 
 
