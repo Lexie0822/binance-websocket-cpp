@@ -77,7 +77,7 @@ This project provides a C++ client for interacting with Binance's WebSocket and 
 - **GoogleTest**: Used for unit testing to ensure the reliability of individual components.
 
   
-### Evaluation Summary of Assignment 1a Solution
+### Assignment 1a Solution
 
 
 
