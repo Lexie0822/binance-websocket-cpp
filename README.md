@@ -110,7 +110,7 @@ This project provides a C++ client for interacting with Binance's WebSocket and 
      - `EventLoop.cpp`, `LockFreeQueue.h`, `ThreadPool.h`
    - **Current Implementation**:
      - Including several lock-free data structures (`LockFreeQueue` and `LockFreePriorityQueue`) that help in scaling the solution horizontally by minimizing locking bottlenecks. The use of thread pools further helps to manage multiple symbols concurrently.
-   - **FImprovements**:
+   - **Improvements**:
      - Improvements can include splitting symbols across specific CPU cores using CPU affinity to avoid overloading a single core. Implementing a load balancing strategy to distribute symbols across available CPU resources would also enhance horizontal scalability.
 
 #### 5. **Low Latency**
@@ -130,29 +130,7 @@ This project provides a C++ client for interacting with Binance's WebSocket and 
      - Consider implementing a more adaptive reconnection strategy that adjusts reconnection times based on previous failures. Adding redundant WebSocket connections that can take over when a primary connection fails would further enhance system reliability.
 
 
-1. **Event Loop Handling**:
-   - Boost.Asio and custom event loops are used to manage asynchronous tasks effectively.
-   - Potential improvements include using `boost::asio::strand` to improve coordination across threads and event loops.
 
-2. **Multithreading**:
-   - A custom `ThreadPool` is utilized for concurrent task handling, using both Boost threading and C++ threading utilities.
-   - Improvements could focus on dynamic thread allocation, CPU affinity, and scaling the thread pool based on current demands.
-
-3. **Deduplication**:
-   - Implemented through bloom filters and a deduplication mechanism to ensure only unique messages trigger callbacks.
-   - Improvements could include hybrid deduplication techniques to further reduce false positives and improve accuracy.
-
-4. **Scaling Horizontally**:
-   - Lock-free data structures and custom memory pooling are used to manage multiple connections and avoid synchronization bottlenecks.
-   - Improvements could focus on symbol distribution using load balancing and CPU affinity to avoid overloading specific CPU cores.
-
-5. **Low Latency**:
-   - Achieved through lock-free data structures, SIMD optimizations, and memory pooling.
-   - Improvements can be made by reducing unnecessary context switches, binding specific tasks to dedicated CPU cores, and reducing logging to prevent I/O bottlenecks.
-
-6. **Reliability**:
-   - Error handling and reconnection strategies have been implemented to ensure stable WebSocket connectivity.
-   - Improvements could include implementing redundant connections and adaptive reconnection logic.
 
 ## Assignment 1b Answers
 
@@ -161,9 +139,10 @@ This project provides a C++ client for interacting with Binance's WebSocket and 
 ![diagram](TR.png)
 
 
-#### CPU Context Switching Diagram
+
 
 The diagram provided illustrates how the threading mechanism is utilized across different tasks to ensure efficient CPU context switching and non-blocking operations for WebSocket and REST connectivity.
+- The **x-axis** represents the different tasks, including WebSocket connectivity, REST polling, message processing, and orderbook management. The **y-axis** represents time, showing how these tasks are distributed over a given period.
 
 - **WebSocket Connectivity (Thread 1)**: Manages WebSocket operations asynchronously, ensuring that the connection is established and messages are deduplicated before processing. WebSocket updates are triggered through callbacks to keep the order book current.
   - The process begins with **WebSocket Connect**, followed by **Receive Data**, **Parse Data**, and **Add to Queue**. After establishing the connection, the system waits for messages and handles **Deduplicate Message** and **Orderbook Update**, calling the **OnOrderbookWs** callback.
@@ -184,33 +163,6 @@ The diagram provided illustrates how the threading mechanism is utilized across 
   - Both **WebSocket Monitoring (Thread 1)** and **REST Polling (Thread 2)** are managed concurrently without blocking each other, thanks to asynchronous operations and proper task scheduling.
 
 
-- The **x-axis** represents the different tasks, including WebSocket connectivity, REST polling, message processing, and orderbook management. The **y-axis** represents time, showing how these tasks are distributed over a given period.
-  
-- Each CPU core is tasked with managing a specific aspect of the Binance Client operation:
-  - **Thread 1** manages **WebSocket connectivity**, which includes establishing the connection, receiving data, deduplicating messages, and triggering the appropriate callbacks for updates.
-  - **Thread 2** handles **REST API polling**, which involves sending requests, parsing responses, and adding results to the queue for further processing.
-  - A **Thread Pool** is used to manage **message processing**. This thread pool is responsible for deduplication, message sorting, and ensuring that the order book remains accurate.
-  - Another **Thread Pool** manages **Orderbook Management**, which includes sorting bid/ask prices and adding data to the appropriate shard.
-  
-- **Context Switching**:
-  - Context switching occurs efficiently between different threads, enabling the system to handle data from both WebSocket and REST APIs simultaneously without blocking the main loop.
-  - The **Thread Pools** play a critical role in maintaining smooth and effective context switching, ensuring that no single task monopolizes CPU resources.
-  
-- **Concurrency and Task Scheduling**:
-  - The use of asynchronous tasks ensures that WebSocket and REST operations do not block each other. WebSocket messages are received and processed independently from REST API polling, which ensures that both data sources can be handled concurrently.
-  - The **Circuit Breaker** mechanism also runs independently, ensuring that any errors or connection issues are dealt with without affecting the main execution flow.
-
-This setup allows for seamless interaction between the WebSocket and REST components, minimizing latency and ensuring reliability. The tasks are distributed across the available CPU cores to achieve optimal performance, and the usage of multiple threads ensures that the system remains non-blocking and responsive.
-
-
-
-Main Thread: Starts the application, initializes resources, and spawns other threads. It doesn't perform blocking operations, ensuring the main loop remains free.
-
-WebSocket Threads: Each symbol (e.g., BTCUSDT, ETHUSDT) has a dedicated thread handling its WebSocket connection. These threads use asynchronous I/O to read data without blocking.
-
-REST Threads: Similar to WebSocket threads, each symbol has a thread that periodically polls the REST API. The polling interval is managed to prevent resource exhaustion.
-
-Message Processing Thread Pool: A pool of worker threads that process messages from a thread-safe queue. They perform deduplication and invoke the appropriate callbacks.
 
 Co-existence Without Blocking:
 
