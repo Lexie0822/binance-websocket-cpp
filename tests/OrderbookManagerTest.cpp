@@ -8,20 +8,20 @@ protected:
 };
 
 TEST_F(OrderbookManagerTest, UpdateOrderbook) {
-    // 创建一个模拟的 JSON 字符串
+    // Create a mock JSON string
     std::string json = R"({
         "bids": [["10000.00", "1.00000000"], ["9999.99", "1.00000000"]],
         "asks": [["10000.01", "1.00000000"], ["10000.02", "1.00000000"]]
     })";
 
-    // 使用 simdjson 解析 JSON
+    // Parse JSON using simdjson
     simdjson::dom::parser parser;
     simdjson::dom::element doc = parser.parse(json);
 
-    // 调用 OnOrderbookWs 方法
+    // Call OnOrderbookWs method
     EXPECT_NO_THROW(manager.OnOrderbookWs("BTCUSDT", doc));
 
-    // 获取订单簿快照并验证
+    // Get order book snapshot and verify
     std::string snapshot = manager.getOrderbookSnapshot("BTCUSDT", 2);
     EXPECT_NE(snapshot.find("\"bids\":[[\"10000.00\",\"1.00000000\"],[\"9999.99\",\"1.00000000\"]]"), std::string::npos);
     EXPECT_NE(snapshot.find("\"asks\":[[\"10000.01\",\"1.00000000\"],[\"10000.02\",\"1.00000000\"]]"), std::string::npos);
