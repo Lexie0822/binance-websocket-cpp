@@ -14,18 +14,21 @@ EventLoop::~EventLoop() {
     stop();
     PrioritizedTask task;
     while (tasks_.pop(task)) {
-        // 任务已经被移出队列，不需要删除
+        // task has been removed from the queue,no need deleted
     }
 }
 
 void EventLoop::run() {
     thread_ = std::thread([this]() {
         while (running_) {
-            io_context_.run_for(std::chrono::milliseconds(10));
-            process_tasks();
+            io_context_.restart();  // Restart the io_context to handle new work immediately
+            io_context_.run_one();  // Run a single task from the io_context (non-blocking)
+
+            process_tasks();  // Process tasks from the queue
         }
     });
 }
+
 
 void EventLoop::stop() {
     running_ = false;
@@ -58,8 +61,30 @@ EventLoopPool::~EventLoopPool() {
 }
 
 EventLoop& EventLoopPool::get_next_event_loop() {
-    return *event_loops_[next_loop_++ % event_loops_.size()];
+    if (event_loops_.empty()) {
+        throw std::runtime_error("No event loops available in EventLoopPool.");
+    }
+
+    // Use a simple load-balancing mechanism to find the event loop with the least work
+    size_t min_tasks = std::numeric_limits<size_t>::max();
+    EventLoop* selected_loop = nullptr;
+
+    for (auto& loop : event_loops_) {
+        size_t task_count = loop->get_task_count();  // Assuming we add a method to get current task count
+        if (task_count < min_tasks) {
+            min_tasks = task_count;
+            selected_loop = loop.get();
+        }
+    }
+
+    // Ensure selected_loop is not null before dereferencing
+    if (selected_loop == nullptr) {
+        throw std::runtime_error("Failed to find a valid event loop.");
+    }
+
+    return *selected_loop;
 }
+
 
 void EventLoopPool::run() {
     for (auto& loop : event_loops_) {
