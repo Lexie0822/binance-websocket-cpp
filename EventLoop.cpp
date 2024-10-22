@@ -96,4 +96,3 @@ EventLoop& EventLoopPool::get_next_event_loop() {
     return *selected_loop;
 }
 
-// Optimized ThreadPool.h
